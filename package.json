@@ -1,0 +1,12 @@
+{
+  "name": "invoice-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A small invoice library.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
