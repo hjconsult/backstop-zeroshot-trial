@@ -1,0 +1,18 @@
+
+Cluster: calm-prism-24
+State: stopped
+Mode: worktree (isolated branch)
+Failure: Provider claude failed (authentication; permanent-pattern)
+Created: 10/12/2026, 8:35:06 PM
+Messages: 10
+
+Agents:
+  - junior-conductor (conductor) [sonnet]
+    State: idle
+    Iteration: 1
+    Running task: No
+  - senior-conductor (conductor) [sonnet]
+    State: stopped
+    Iteration: 0
+    Running task: No
+

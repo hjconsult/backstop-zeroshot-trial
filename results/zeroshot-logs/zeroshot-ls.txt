@@ -1,0 +1,13 @@
+
+=== Clusters ===
+ID                        State        Mode       Agents   Tokens       Cost     Created
+--------------------------------------------------------------------------------------------------------------
+calm-prism-24             stopped      worktree   2        -            -        10/12/2026, 8:35:06 PM
+
+=== Tasks ===
+
+=== Tasks (1/1) ===
+ID                        Status       Age        CWD
+----------------------------------------------------------------------------------------------------
+calm-bastion-47           failed       just now   ~/.zeroshot/worktrees/calm-prism-24
+

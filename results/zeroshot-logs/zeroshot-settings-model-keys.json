@@ -1,0 +1,11 @@
+{
+  "maxModel": "sonnet",
+  "minModel": null,
+  "providerSettings.claude": {
+    "minLevel": "level2",
+    "maxLevel": "level3",
+    "defaultLevel": "level2",
+    "minModel": "sonnet",
+    "maxModel": "sonnet"
+  }
+}
