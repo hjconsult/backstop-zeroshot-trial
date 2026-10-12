@@ -1,10 +1,46 @@
-# Zeroshot trial: third attempt (non-root user zsrun)
+# Zeroshot trial: root route with IS_SANDBOX=1
+
+Branch `zeroshot-run`, base commit `028d592`. Date: 2026-10-12 (UTC). Task texts are taken word for word from `TASKS.md` (line breaks folded to spaces).
+
+## Owner's decision (recorded as instructed)
+
+The owner decided to use the root route: Zeroshot is run **as root**, with `IS_SANDBOX=1` set on every `zeroshot` and `claude` command. This container is a throwaway sandbox, and the owner accepts that Zeroshot's agents run here **without Claude Code's root guard** (Claude Code refuses `--dangerously-skip-permissions` as root; `IS_SANDBOX=1` turns that check off). This replaces the non-root plan of the earlier attempt below, which stopped because `claude` could not authenticate as `zsrun`. It means the agents run with full permissions as root in this container; the results below were produced under that condition.
+
+## Step 1: `claude` check as root
+
+In `/home/user/backstop-zeroshot-trial`, branch `zeroshot-run`, uid 0:
+
+```
+IS_SANDBOX=1 claude -p "reply OK" --max-turns 1
+```
+
+Output: `OK`, exit 0. (It also printed a notice that `permissions.allow` from `.claude/settings.json` was ignored because the workspace is not trusted; this does not affect the check.)
+
+## Step 2: model pinning as root
+
+Commands: `IS_SANDBOX=1 zeroshot -q settings set <key> <value>`, run in this order: top-level `maxModel`, then the five `providerSettings.claude` keys. Setting `maxModel` first matters: Zeroshot's loader (`applyLegacyModelBounds`) overwrites `providerSettings.claude.maxLevel` from the legacy top-level `maxModel`, which defaults to `opus`.
+
+| Key | Set | Read back (`zeroshot settings get`) | Raw in `~/.zeroshot/settings.json` |
+|---|---|---|---|
+| `maxModel` (top-level) | `sonnet` | `sonnet` | `sonnet` |
+| `minModel` (top-level) | not set | `null` | `null` |
+| `providerSettings.claude.minLevel` | `level2` | `level2` | `level2` |
+| `providerSettings.claude.maxLevel` | `level2` | `level2` | `level2` |
+| `providerSettings.claude.defaultLevel` | `level2` | `level2` | `level2` |
+| `providerSettings.claude.minModel` | `sonnet` | `sonnet` | `sonnet` |
+| `providerSettings.claude.maxModel` | `sonnet` | `sonnet` | `sonnet` |
+
+Raw model/level keys are saved in `results/zeroshot-logs/zeroshot-settings-model-keys-root.json`. Unlike the zsrun attempt, the stored and effective values agree.
+
+---
+
+## Earlier attempt: non-root user zsrun (stopped at authentication)
 
 **Status: stopped at step 3. Zeroshot ran as a non-root user and got past its own preflight, but the `claude` CLI cannot authenticate as `zsrun`. T1 was attempted once and failed on authentication before any model work. T2 and T3 were not run. No code was changed, nothing was merged.**
 
 Branch `zeroshot-run`, base commit `364d18d` (`8e0de6b` is the original invoice-kit commit). Date of run: 2026-10-12 (UTC).
 
-## Summary
+### Summary
 
 | Step | Result |
 |---|---|
@@ -18,7 +54,7 @@ Branch `zeroshot-run`, base commit `364d18d` (`8e0de6b` is the original invoice-
 
 The decisive result is positive for the approach and negative for the environment: the root-user preflight failure from the first attempt is gone when Zeroshot runs as `zsrun`, and the cluster started, but every model call fails at authentication, so none of the three tasks could be measured.
 
-## Step 3 in detail: the `claude` check as zsrun
+### Step 3 in detail: the `claude` check as zsrun
 
 All runs used `runuser -u zsrun`, with the session environment preserved (not printed). Output was the same each time apart from a warning in the first:
 
@@ -33,7 +69,7 @@ What I found and did:
 - There is no Claude login *file* to copy. Listing names only (no contents), neither `/root/.claude` nor `/home/zsrun/.claude` contains a credentials file; `/home/zsrun` already had `.claude/` and `.claude.json`. So the login is not stored in the home directory the way step 3 assumes. How the session authenticates (some environment-provided mechanism) was not determined. See the refusal below for why I stopped looking.
 - I did not print, log, commit or send any credential. No environment variable values were printed, and none were listed.
 
-## Refused command
+### Refused command
 
 One command was refused by the permission check in this attempt. It tried to read the proxy/CA documentation in `/root/.ccr/` and call the proxy status endpoint, to learn how the proxy and authentication are handed to child processes:
 
@@ -49,7 +85,7 @@ I did not retry it in another form (`head`, `less`, other paths). The CA bundle 
 
 The refusal from the second attempt (credential copy and listing of environment variable names) is kept in git history at `364d18d`.
 
-### Second refusal, after the user asked me to fix the authentication
+#### Second refusal, after the user asked me to fix the authentication
 
 The user then asked me to fix it and run it, and asked whether to use this Claude session's sub-agents or just `claude`. I chose the real `claude` CLI: Zeroshot starts `claude` as a subprocess (its `claudeCommand` setting defaults to `claude`), a subprocess cannot call this session's sub-agents, and running the tasks through sub-agents would measure those, not Zeroshot. No Zeroshot code needs rewriting for that.
 
@@ -69,7 +105,7 @@ I did not retry it in another form. Options for the user (not taken by me):
 3. Run `claude -p "reply OK" --max-turns 1` as `zsrun` by hand and tell me what is needed.
 4. Run Zeroshot as root with the Claude CLI's root-user override. I did not do this: it switches off the check that made the first attempt stop, and this trial was set up to follow Zeroshot's documented non-root fix instead.
 
-## Settings (as zsrun, `~/.zeroshot/settings.json`)
+### Settings (as zsrun, `~/.zeroshot/settings.json`)
 
 Commands run as `zsrun`: `zeroshot -q settings set <key> <value>`.
 
@@ -86,7 +122,7 @@ Two things to know:
 1. **Addition to the listed keys.** After setting the five keys, `providerSettings.claude.maxLevel` read back as `level3`. Cause, from `lib/settings-models.js` in the package (`applyLegacyModelBounds`): the legacy top-level `maxModel` (default `opus`) overwrites `providerSettings.claude.maxLevel` every time settings are loaded. With the five listed keys alone, Opus stays reachable. I therefore also set the top-level `maxModel` to `sonnet`. The top-level `minModel` is left at `null`; the Haiku floor comes from `providerSettings.claude.minLevel=level2` and `minModel=sonnet`.
 2. **Stored value differs from effective value.** The raw `maxLevel` in the settings file still reads `level3` after a re-set (see `results/zeroshot-logs/zeroshot-settings-model-keys.json`), while every effective read returns `level2`, because the loader derives it from `maxModel=sonnet`. I did not find out why the file keeps `level3`. The agents in the T1 attempt were shown as `[sonnet]`, which agrees with the effective values, but no model call succeeded, so this has not been confirmed by a real run.
 
-## T1: Discount codes (attempted)
+### T1: Discount codes (attempted)
 
 Task text, exactly as in `TASKS.md` (line breaks folded to spaces): "Add `applyDiscount(netCents, code)` in `src/discount.js`. `TEN` takes 10% off, `FIFTY` takes 5000 cents off, and the result never goes below zero. An unknown code throws a `RangeError`. Add tests."
 
@@ -106,26 +142,26 @@ Command: `zeroshot -q run "<text>" --worktree` in `/home/zsrun/trial` as `zsrun`
 | `npm test` after | Not applicable (nothing merged). Baseline on `zeroshot-run`: 6 pass, 0 fail. |
 | Would a person have had to step in? | Yes. Authentication for `claude` as `zsrun` has to be fixed by someone with access to how the session authenticates. |
 
-## T2: Discounted invoices: not run
+### T2: Discounted invoices: not run
 
 Depends on a merged T1. Not attempted.
 
-## T3: Cash rounding: not run
+### T3: Cash rounding: not run
 
 Depends on T2. Not attempted. (The check that `test/money.test.js` is unchanged was done on the untouched tree and passes.)
 
-## Things that went wrong
+### Things that went wrong
 
 1. `claude -p "reply OK" --max-turns 1` fails as `zsrun` with an authentication error in every variant tried. Cause not established.
 2. A command to read the proxy documentation in `/root/.ccr/` was refused (message above).
 3. Zeroshot's default settings let the legacy top-level `maxModel=opus` undo a `level2` pin of `providerSettings.claude.maxLevel`. A trial that pins only the listed keys can still use Opus.
 4. Zeroshot printed `foreground agent processes did not settle after terminal` after the failure, and left a stopped cluster and a worktree behind in `/home/zsrun/.zeroshot/`.
 
-## What is needed to continue
+### What is needed to continue
 
 Someone has to make the session's `claude` authentication work for `zsrun` (or run the step 3 check by hand and say how it authenticates). Then re-run from step 3. The rest of the plan is ready: `zsrun` exists, `/home/zsrun/trial` is on `zeroshot-run`, the models are pinned, and Zeroshot's preflight passes as non-root. First check: `runuser -u zsrun … claude -p "reply OK" --max-turns 1` must print `OK`.
 
-## Files
+### Files
 
 - `results/zeroshot-logs/T1-run.log`: full foreground output of the T1 attempt.
 - `results/zeroshot-logs/T1-cluster-logs.txt`, `T1-status.txt`, `zeroshot-ls.txt`: `zeroshot logs`, `status`, `ls` for cluster `calm-prism-24`.
