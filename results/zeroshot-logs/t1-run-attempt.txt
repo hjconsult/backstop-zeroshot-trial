@@ -1,0 +1,16 @@
+
+============================================================
+PREFLIGHT CHECK FAILED
+============================================================
+
+❌ Running as root
+   Claude CLI refuses --dangerously-skip-permissions flag when running as root (UID 0)
+
+   To fix:
+   1. Run as non-root user in Docker: docker run --user 1000:1000 ...
+   2. Or create non-root user: adduser testuser && su - testuser
+   3. Or use existing node user: docker run --user node ...
+   4. Security: Claude CLI blocks this flag as root to prevent privilege escalation
+
+============================================================
+
