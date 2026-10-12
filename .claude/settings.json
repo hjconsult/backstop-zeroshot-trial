@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install -g @the-open-engine/zeroshot@7.0.1)",
+      "Bash(npm install -g @the-open-engine/zeroshot@7.0.1:*)",
+      "Bash(npm rebuild:*)",
+      "Bash(zeroshot:*)",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(node --test:*)"
+    ]
+  }
+}
