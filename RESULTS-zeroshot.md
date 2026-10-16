@@ -1,5 +1,23 @@
 # Zeroshot trial: subscription route as zsrun
 
+## Subscription route as zsrun (2026-10-16), second run
+
+**Status: stopped at step 1 again. `bash scripts/zs.sh check` failed: both the real token and the wrong token got `Failed to authenticate. API Error: 401 Invalid bearer token`. No model was pinned; T1, T2 and T3 were not run. No code changed, nothing merged.**
+
+| Step | Result |
+|---|---|
+| 1a. `setup` | First run failed on git's dubious-ownership check (fresh container; `/home/zsrun/trial` missing). I ran `git config --global --add safe.directory '*'` as zsrun (its own gitconfig, no token), re-ran setup: `zsrun 30033, zeroshot 7.0.1, tree /home/zsrun/trial (1d140c5)`. Script not edited. |
+| 1b. `check` | **Failed.** Real token: exit 1, 401 Invalid bearer token. Wrong token: exit 1, same. Verdict: `not proven`. |
+| 2-5 | Not done. |
+
+Notes:
+- `ZEROSHOT_TOKEN` is set and its length is **48** characters. A token from `claude setup-token` (`sk-ant-oat01-...`) is normally about 100 characters or more, so the saved value looks cut short again, as in the run before. I did not print or inspect the value.
+- Claude Code also warned that the `permissions.allow` entries in `.claude/settings.json` are ignored in `/home/zsrun/trial` because the workspace is untrusted. That did not cause the 401, but would matter if agents needed those rules.
+- Nothing was refused by the permission checks.
+- The `setup` step still needs the manual `safe.directory` config in a fresh container (suggest adding it to the script, run as zsrun).
+
+---
+
 ## Subscription route as zsrun (2026-10-16)
 
 **Status: stopped at step 1. `bash scripts/zs.sh check` did not pass: the subscription token (ZEROSHOT_TOKEN) was rejected by the API with `Failed to authenticate. API Error: 401 Invalid bearer token`. No model was pinned and T1, T2 and T3 were not run. No code was changed, nothing was merged.**
