@@ -7,7 +7,9 @@
       "Bash(zeroshot:*)",
       "Bash(npm test)",
       "Bash(npm test:*)",
-      "Bash(node --test:*)"
+      "Bash(node --test:*)",
+      "Bash(bash scripts/zs.sh:*)",
+      "Bash(bash /home/user/backstop-zeroshot-trial/scripts/zs.sh:*)"
     ]
   }
 }
