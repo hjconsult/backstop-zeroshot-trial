@@ -62,7 +62,15 @@ case "${1:-}" in
       npm install -g "@the-open-engine/zeroshot@$ZS_VERSION"
     fi
     if [ ! -d "$TREE/.git" ]; then
-      runuser -u zsrun -- git -c safe.directory="$here" -c safe.directory="$here/.git" clone -q "$here" "$TREE"
+      # zsrun reads a tree root owns. `-c safe.directory=` on the clone does not reach the upload-pack
+      # git starts for it (both runs on 2026-10-16 had to add this by hand), so it goes in zsrun's own
+      # gitconfig, for this tree only.
+      for d in "$here" "$here/.git"; do
+        if ! runuser -u zsrun -- git config --global --get-all safe.directory | grep -qxF "$d"; then
+          runuser -u zsrun -- git config --global --add safe.directory "$d"
+        fi
+      done
+      runuser -u zsrun -- git clone -q "$here" "$TREE"
     fi
     echo "zs setup: zsrun $(id -u zsrun), zeroshot $(zeroshot --version 2>&1 | tail -1), tree $TREE ($(runuser -u zsrun -- git -C "$TREE" rev-parse --short HEAD))"
     ;;
